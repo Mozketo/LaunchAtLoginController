@@ -1,15 +1,14 @@
 # LaunchAtLoginController
 
-## DESCRIPTION:
+A very simple to implement Controller for use in Cocoa Mac Apps to register/deregister itself for Launch at Login using LSSharedFileList.
 
-A very simple to implement and consume Controller for Objective-C Cocoa Mac Apps to (de)register itself for Launch at Login using LSSharedFileList.
+It uses LSSharedFileList which means your Users will be able to check System Preferences > Accounts > Login Items.
 
-It uses LSSharedFileList which means your User will be able to check System Preferences > Accounts > Login Items
+I'm currently using it on 10.6 (32/64) successfully. I've not investigated being able to flag the "Hide" flag which is possible from System Preferences.
 
+## IMPLEMENTATION (Code):
 
-## IMPLEMENTATION (Code)
-
-### Will launch at login?
+### Will app launch at login?
 
     LaunchAtLoginController *launchController = [[LaunchAtLoginController alloc] init];
 	BOOL launch = [launchController launchAtLogin];
@@ -18,12 +17,10 @@ It uses LSSharedFileList which means your User will be able to check System Pref
 ### Set launch at login state.
 
 	LaunchAtLoginController *launchController = [[LaunchAtLoginController alloc] init];
-	BOOL newLaunchState = ![launchController launchAtLogin];
-	[launchController setLaunchAtLogin:(newLaunchState)];
+	[launchController setLaunchAtLogin:YES];
 	[launchController release];
 
-
-## IMPLEMENTATION (Interface builder)
+## IMPLEMENTATION (Interface builder):
 
 * Open Interface Builder
 * Place a NSObject (the blue box) into the nib window
@@ -33,26 +30,24 @@ It uses LSSharedFileList which means your User will be able to check System Pref
   * Bind to Launch at Login Controller
   * Model Key Path: launchAtLogin
 
+## IS IT WORKING:
 
-## IS IT WORKING?
+After implementing either through code or through IB, setLaunchAtLogin:YES and then check System Preferences > Accounts > Login Items. You should see your app in the list of apps that will start when the user logs in.
 
-After implementing either through code or through IB, setLaunchAtLogin:YES and then check System Preferences > Accounts > Login Items. You should see your app in the list.
+## CAVEATS (HelperApp Bundles):
 
-
-## CAVEATS (HelperApp Bundles)
-
-If you're trying to set a different bundle (perhaps a HelperApp as a resource to your main bundle) you will simply want to change - (NSURL *)appURL to return the path to this other bundle.
-
+If you're trying to set a different bundle (perhaps a HelperApp as a resource to your main bundle) you will simply want to change 
+    - (NSURL *)appURL 
+to return the path to this other bundle.
 
 ## REQUIREMENTS:
 
 Works on 10.6/10.5
 
-
 ## ORIGINAL CODE IDEAS:
 
 * Growl. 
-* User: invariant Link: http://stackoverflow.com/questions/815063/how-do-you-make-your-app-open-at-login/2318004#2318004
+* User: invariant Link: (http://stackoverflow.com/questions/815063/how-do-you-make-your-app-open-at-login/2318004#2318004)
 
 
 ## LICENSE:
