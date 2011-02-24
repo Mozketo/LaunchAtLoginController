@@ -26,8 +26,7 @@
 
 @property(assign) BOOL launchAtLogin;
 
-- (BOOL) willLaunchAtLogin: (NSURL*) itemUrl;
-- (void) setLaunchAtLogin: (BOOL) enabled;
-- (void) setLaunchAtLogin: (NSURL*) itemURL enabled: (BOOL) enabled;
+- (BOOL) willLaunchAtLogin: (NSURL*) itemURL;
+- (void) setLaunchAtLogin: (BOOL) enabled forURL: (NSURL*) itemURL;
 
 @end
