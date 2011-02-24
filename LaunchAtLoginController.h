@@ -22,17 +22,12 @@
 //	TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 //	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#import <Cocoa/Cocoa.h>
+@interface LaunchAtLoginController : NSObject {}
 
+@property(assign) BOOL launchAtLogin;
 
-@interface LaunchAtLoginController : NSObject {
-
-}
-
-@property BOOL launchAtLogin;
-
-- (BOOL)willLaunchAtLogin:(NSURL *)itemUrl;
-- (void)setLaunchAtLogin:(BOOL)enabled;
-- (void)setLaunchAtLogin:(NSURL *)itemURL enabled:(BOOL)enabled;
+- (BOOL) willLaunchAtLogin: (NSURL*) itemUrl;
+- (void) setLaunchAtLogin: (BOOL) enabled;
+- (void) setLaunchAtLogin: (NSURL*) itemURL enabled: (BOOL) enabled;
 
 @end
