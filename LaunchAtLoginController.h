@@ -1,8 +1,8 @@
 //
 //  LaunchAtLoginController.h
 //
-//  Created by Ben Clark-Robinson on 24/03/10.
-//  Copyright 2010 Mozketo. All rights reserved.
+//  Copyright 2011 Tomáš Znamenáček
+//  Copyright 2010 Ben Clark-Robinson
 //
 //  Permission is hereby granted, free of charge, to any person obtaining
 //  a copy of this software and associated documentation files (the ‘Software’),
