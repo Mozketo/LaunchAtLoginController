@@ -78,7 +78,8 @@ void sharedFileListDidChange(LSSharedFileListRef inList, void *context)
             CFRelease(currentItemURL);
             return item;
         }
-        CFRelease(currentItemURL);
+        if (currentItemURL)
+            CFRelease(currentItemURL);
     }
 
     return NULL;
