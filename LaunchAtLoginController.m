@@ -67,8 +67,17 @@
     [self didChangeValueForKey:@"startAtLogin"];
 }
 
+- (void)setLaunchAtLogin:(BOOL)enabled hidden:(BOOL)hidden {
+    [self willChangeValueForKey:@"startAtLogin"];
+    [self setLaunchAtLogin:[self appURL] enabled:enabled hidden:hidden];
+    [self didChangeValueForKey:@"startAtLogin"];
+}
 
 - (void)setLaunchAtLogin:(NSURL *)itemURL enabled:(BOOL)enabled {
+    [self setLaunchAtLogin:itemURL enabled:enabled hidden:NO];
+}
+
+- (void)setLaunchAtLogin:(NSURL *)itemURL enabled:(BOOL)enabled hidden:(BOOL)hidden {
     LSSharedFileListItemRef existingItem = NULL;
 	
     LSSharedFileListRef loginItems = LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL);
@@ -91,17 +100,25 @@
                 }
             }
         }
-		
+        
         if (enabled && (existingItem == NULL)) {
-            LSSharedFileListInsertItemURL(loginItems, kLSSharedFileListItemBeforeFirst,
-                                          NULL, NULL, (CFURLRef)itemURL, NULL, NULL);
+            if(!hidden) {
+                LSSharedFileListInsertItemURL(loginItems, kLSSharedFileListItemBeforeFirst,
+                                              NULL, NULL, (CFURLRef)itemURL, NULL, NULL);
+            }
+            else {
+                NSDictionary *setProperties =
+                [NSDictionary dictionaryWithObject:[NSNumber numberWithBool:hidden]
+                                            forKey:(id)kLSSharedFileListLoginItemHidden];
+                LSSharedFileListInsertItemURL(loginItems, kLSSharedFileListItemBeforeFirst,
+                                              NULL, NULL, (CFURLRef)itemURL, (CFDictionaryRef)setProperties, NULL);
+            }
 			
         } else if (!enabled && (existingItem != NULL))
             LSSharedFileListItemRemove(loginItems, existingItem);
 		
         CFRelease(loginItems);
-    }       
+    } 
 }
-
 
 @end
