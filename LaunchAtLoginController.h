@@ -27,13 +27,15 @@
 
 
 @interface LaunchAtLoginController : NSObject {
-
+    
 }
 
 @property BOOL launchAtLogin;
 
 - (BOOL)willLaunchAtLogin:(NSURL *)itemUrl;
 - (void)setLaunchAtLogin:(BOOL)enabled;
+- (void)setLaunchAtLogin:(BOOL)enabled hidden:(BOOL)hidden;
 - (void)setLaunchAtLogin:(NSURL *)itemURL enabled:(BOOL)enabled;
+- (void)setLaunchAtLogin:(NSURL *)itemURL enabled:(BOOL)enabled hidden:(BOOL)hidden;
 
 @end
