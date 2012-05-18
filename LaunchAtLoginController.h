@@ -27,12 +27,14 @@
 
 
 @interface LaunchAtLoginController : NSObject {
-    
+    LSSharedFileListRef loginItems;
 }
 
 @property BOOL launchAtLogin;
 
 - (BOOL)willLaunchAtLogin:(NSURL *)itemUrl;
+- (BOOL)willLaunchHiddenAtLogin: (NSURL*)itemURL;
+
 - (void)setLaunchAtLogin:(BOOL)enabled;
 - (void)setLaunchAtLogin:(BOOL)enabled hidden:(BOOL)hidden;
 - (void)setLaunchAtLogin:(NSURL *)itemURL enabled:(BOOL)enabled;
