@@ -71,14 +71,24 @@ void sharedFileListDidChange(LSSharedFileListRef inList, void *context)
     if (wantedURL == NULL || fileList == NULL)
         return NULL;
 	
+	// Get the URL's file attributes. That includes the NSFileSystemFileNumber.
+	// comparing the file number is better than comparing URLs
+	// because it doesn't have to deal with case sensitivity
+	
+	NSDictionary* wantedAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath: [(NSURL*)wantedURL path] error: nil];
     NSArray *listSnapshot = [NSMakeCollectable(LSSharedFileListCopySnapshot(fileList, NULL)) autorelease];
-    for (id itemObject in listSnapshot) {
+    for (id itemObject in listSnapshot)
+	{
         LSSharedFileListItemRef item = (LSSharedFileListItemRef) itemObject;
         UInt32 resolutionFlags = kLSSharedFileListNoUserInteraction | kLSSharedFileListDoNotMountVolumes;
         CFURLRef currentItemURL = NULL;
         LSSharedFileListItemResolve(item, resolutionFlags, &currentItemURL, NULL);
-        if (currentItemURL && CFEqual(currentItemURL, wantedURL)) {
-            CFRelease(currentItemURL);
+		
+		NSDictionary* currentAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:[(NSURL*)currentItemURL path] error:nil];
+        
+		if (currentAttributes && [currentAttributes isEqual: wantedAttributes])
+		{
+			CFRelease(currentItemURL);
             return item;
         }
         if (currentItemURL)
