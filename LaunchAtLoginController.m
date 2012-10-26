@@ -25,8 +25,38 @@
 
 #import "LaunchAtLoginController.h"
 
+static NSString *const StartAtLoginKey = @"launchAtLogin";
+
+@interface LaunchAtLoginController ()
+@property(assign) LSSharedFileListRef loginItems;
+@end
 
 @implementation LaunchAtLoginController
+@synthesize loginItems;
+
+void sharedFileListDidChange(LSSharedFileListRef inList, void *context)
+{
+    LaunchAtLoginController *self = (id) context;
+    [self willChangeValueForKey:StartAtLoginKey];
+    [self didChangeValueForKey:StartAtLoginKey];
+}
+
+- (id) init
+{
+    [super init];
+    loginItems = LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL);
+    LSSharedFileListAddObserver(loginItems, CFRunLoopGetMain(),
+								(CFStringRef)NSDefaultRunLoopMode, sharedFileListDidChange, self);
+    return self;
+}
+
+- (void) dealloc
+{
+    LSSharedFileListRemoveObserver(loginItems, CFRunLoopGetMain(),
+								   (CFStringRef)NSDefaultRunLoopMode, sharedFileListDidChange, self);
+    CFRelease(loginItems);
+    [super dealloc];
+}
 
 - (NSURL *)appURL {
     return [NSURL fileURLWithPath:[[NSBundle mainBundle] bundlePath]];
@@ -36,89 +66,107 @@
     return [self willLaunchAtLogin:[self appURL]];
 }
 
-- (BOOL)willLaunchAtLogin:(NSURL *)itemURL {
-    Boolean foundIt=false;
-    LSSharedFileListRef loginItems = LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL);
-    if (loginItems) {
-        UInt32 seed = 0U;
-        NSArray *currentLoginItems = [NSMakeCollectable(LSSharedFileListCopySnapshot(loginItems, &seed)) autorelease];
-        for (id itemObject in currentLoginItems) {
-            LSSharedFileListItemRef item = (LSSharedFileListItemRef)itemObject;
-			
-            UInt32 resolutionFlags = kLSSharedFileListNoUserInteraction | kLSSharedFileListDoNotMountVolumes;
-            CFURLRef URL = NULL;
-            OSStatus err = LSSharedFileListItemResolve(item, resolutionFlags, &URL, /*outRef*/ NULL);
-            if (err == noErr) {
-                foundIt = CFEqual(URL, itemURL);
-                CFRelease(URL);
-				
-                if (foundIt)
-                    break;
-            }
+- (LSSharedFileListItemRef) findItemWithURL: (NSURL*) wantedURL inFileList: (LSSharedFileListRef) fileList
+{
+    if (wantedURL == NULL || fileList == NULL)
+        return NULL;
+	
+	// Get the URL's file attributes. That includes the NSFileSystemFileNumber.
+	// comparing the file number is better than comparing URLs
+	// because it doesn't have to deal with case sensitivity
+	
+	NSDictionary* wantedAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath: [(NSURL*)wantedURL path] error: nil];
+    NSArray *listSnapshot = [NSMakeCollectable(LSSharedFileListCopySnapshot(fileList, NULL)) autorelease];
+    for (id itemObject in listSnapshot)
+	{
+        LSSharedFileListItemRef item = (LSSharedFileListItemRef) itemObject;
+        UInt32 resolutionFlags = kLSSharedFileListNoUserInteraction | kLSSharedFileListDoNotMountVolumes;
+        CFURLRef currentItemURL = NULL;
+        LSSharedFileListItemResolve(item, resolutionFlags, &currentItemURL, NULL);
+		
+		NSDictionary* currentAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:[(NSURL*)currentItemURL path] error:nil];
+        
+		if (currentAttributes && [currentAttributes isEqual: wantedAttributes])
+		{
+			CFRelease(currentItemURL);
+            return item;
         }
-        CFRelease(loginItems);
+        if (currentItemURL)
+            CFRelease(currentItemURL);
     }
-    return (BOOL)foundIt;
+	
+    return NULL;
 }
 
-- (void)setLaunchAtLogin:(BOOL)enabled {
+- (LSSharedFileListItemRef)findItemWithURL:(NSURL*)wantedURL 
+{
+	return [self findItemWithURL:wantedURL inFileList:self.loginItems];
+}
+
+- (BOOL) willLaunchAtLogin: (NSURL*) itemURL
+{
+    return !![self findItemWithURL: itemURL];
+}
+
+- (BOOL)willLaunchHiddenAtLogin: (NSURL*)itemURL
+{
+	LSSharedFileListItemRef item = [self findItemWithURL:itemURL];
+	if (item)
+	{
+		NSNumber* number = LSSharedFileListItemCopyProperty(item, kLSSharedFileListLoginItemHidden);
+		if (number)
+		{
+			return [number boolValue];
+		}
+	}
+	return NO;
+}
+
+- (void)setLaunchAtLogin:(BOOL)enabled 
+{
     [self willChangeValueForKey:@"startAtLogin"];
     [self setLaunchAtLogin:[self appURL] enabled:enabled];
     [self didChangeValueForKey:@"startAtLogin"];
 }
 
-- (void)setLaunchAtLogin:(BOOL)enabled hidden:(BOOL)hidden {
-    [self willChangeValueForKey:@"startAtLogin"];
+- (void)setLaunchAtLogin:(BOOL)enabled hidden:(BOOL)hidden 
+{
+	[self willChangeValueForKey:@"startAtLogin"];
     [self setLaunchAtLogin:[self appURL] enabled:enabled hidden:hidden];
     [self didChangeValueForKey:@"startAtLogin"];
 }
 
-- (void)setLaunchAtLogin:(NSURL *)itemURL enabled:(BOOL)enabled {
+- (void)setLaunchAtLogin:(NSURL *)itemURL enabled:(BOOL)enabled 
+{
     [self setLaunchAtLogin:itemURL enabled:enabled hidden:NO];
 }
 
-- (void)setLaunchAtLogin:(NSURL *)itemURL enabled:(BOOL)enabled hidden:(BOOL)hidden {
-    LSSharedFileListItemRef existingItem = NULL;
+- (void)setLaunchAtLogin:(NSURL *)itemURL enabled:(BOOL)enabled hidden:(BOOL)hidden 
+{
+    LSSharedFileListItemRef existingItem = [self findItemWithURL:itemURL inFileList:loginItems];
 	
-    LSSharedFileListRef loginItems = LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL);
-    if (loginItems) {
-        UInt32 seed = 0U;
-        NSArray *currentLoginItems = [NSMakeCollectable(LSSharedFileListCopySnapshot(loginItems, &seed)) autorelease];
-        for (id itemObject in currentLoginItems) {
-            LSSharedFileListItemRef item = (LSSharedFileListItemRef)itemObject;
-			
-            UInt32 resolutionFlags = kLSSharedFileListNoUserInteraction | kLSSharedFileListDoNotMountVolumes;
-            CFURLRef URL = NULL;
-            OSStatus err = LSSharedFileListItemResolve(item, resolutionFlags, &URL, /*outRef*/ NULL);
-            if (err == noErr) {
-                Boolean foundIt = CFEqual(URL, itemURL);
-                CFRelease(URL);
-				
-                if (foundIt) {
-                    existingItem = item;
-                    break;
-                }
-            }
-        }
-        
-        if (enabled && (existingItem == NULL)) {
-            if(!hidden) {
-                LSSharedFileListInsertItemURL(loginItems, kLSSharedFileListItemBeforeFirst,
-                                              NULL, NULL, (CFURLRef)itemURL, NULL, NULL);
-            }
-            else {
-                NSDictionary *setProperties =
-                [NSDictionary dictionaryWithObject:[NSNumber numberWithBool:hidden]
-                                            forKey:(id)kLSSharedFileListLoginItemHidden];
-                LSSharedFileListInsertItemURL(loginItems, kLSSharedFileListItemBeforeFirst,
-                                              NULL, NULL, (CFURLRef)itemURL, (CFDictionaryRef)setProperties, NULL);
-            }
-			
-        } else if (!enabled && (existingItem != NULL))
-            LSSharedFileListItemRemove(loginItems, existingItem);
+	if (enabled && (existingItem == NULL)) 
+	{
+		if(!hidden) 
+		{
+			LSSharedFileListInsertItemURL(self.loginItems, kLSSharedFileListItemBeforeFirst,
+										  NULL, NULL, (CFURLRef)itemURL, NULL, NULL);
+		}
+		else 
+		{
+			NSDictionary *setProperties =
+			[NSDictionary dictionaryWithObject:[NSNumber numberWithBool:hidden]
+										forKey:(id)kLSSharedFileListLoginItemHidden];
+			LSSharedFileListInsertItemURL(self.loginItems, kLSSharedFileListItemBeforeFirst,
+										  NULL, NULL, (CFURLRef)itemURL, (CFDictionaryRef)setProperties, NULL);
+		}
 		
-        CFRelease(loginItems);
-    } 
+	}
+	else if (!enabled && (existingItem != NULL))
+	{
+		LSSharedFileListItemRemove(self.loginItems, existingItem);
+	}	
 }
 
 @end
+
