@@ -68,20 +68,24 @@ void sharedFileListDidChange(LSSharedFileListRef inList, void *context)
     if (wantedURL == NULL || fileList == NULL)
         return NULL;
 
-    NSArray *listSnapshot = [NSMakeCollectable(LSSharedFileListCopySnapshot(fileList, NULL)) autorelease];
-    for (id itemObject in listSnapshot) {
-        LSSharedFileListItemRef item = (LSSharedFileListItemRef) itemObject;
+    CFArrayRef listSnapshot = LSSharedFileListCopySnapshot(fileList, NULL);
+    for (id itemObject in (__bridge NSArray *)listSnapshot) {
+        LSSharedFileListItemRef item = (__bridge LSSharedFileListItemRef) itemObject;
         UInt32 resolutionFlags = kLSSharedFileListNoUserInteraction | kLSSharedFileListDoNotMountVolumes;
         CFURLRef currentItemURL = NULL;
         LSSharedFileListItemResolve(item, resolutionFlags, &currentItemURL, NULL);
-        if (currentItemURL && CFEqual(currentItemURL, wantedURL)) {
+        if (currentItemURL && CFEqual(currentItemURL, (__bridge CFTypeRef)(wantedURL))) {
             CFRelease(currentItemURL);
+            CFRelease(listSnapshot);
             return item;
         }
         if (currentItemURL)
             CFRelease(currentItemURL);
     }
 
+    if (listSnapshot)
+        CFRelease(listSnapshot);
+    
     return NULL;
 }
 
