@@ -94,7 +94,7 @@ void sharedFileListDidChange(LSSharedFileListRef inList, void *context)
 {
     LSSharedFileListItemRef appItem = [self findItemWithURL:itemURL inFileList:loginItems];
     if (enabled && !appItem) {
-        appItem = LSSharedFileListInsertItemURL(loginItems, kLSSharedFileListItemBeforeFirst,
+        appItem = LSSharedFileListInsertItemURL(loginItems, kLSSharedFileListItemLast,
             NULL, NULL, (CFURLRef)itemURL, NULL, NULL);
         if (appItem)
             CFRelease(appItem);
