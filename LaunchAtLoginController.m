@@ -46,7 +46,7 @@ void sharedFileListDidChange(LSSharedFileListRef inList, void *context)
 
 - (id) init
 {
-    [super init];
+    self = [super init];
     loginItems = LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL);
     LSSharedFileListAddObserver(loginItems, CFRunLoopGetMain(),
         (CFStringRef)NSDefaultRunLoopMode, sharedFileListDidChange, self);
@@ -94,8 +94,10 @@ void sharedFileListDidChange(LSSharedFileListRef inList, void *context)
 {
     LSSharedFileListItemRef appItem = [self findItemWithURL:itemURL inFileList:loginItems];
     if (enabled && !appItem) {
-        LSSharedFileListInsertItemURL(loginItems, kLSSharedFileListItemBeforeFirst,
+        appItem = LSSharedFileListInsertItemURL(loginItems, kLSSharedFileListItemLast,
             NULL, NULL, (CFURLRef)itemURL, NULL, NULL);
+        if (appItem)
+            CFRelease(appItem);
     } else if (!enabled && appItem)
         LSSharedFileListItemRemove(loginItems, appItem);
 }
